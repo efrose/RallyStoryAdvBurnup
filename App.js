@@ -1,10 +1,12 @@
 Ext.define('CustomApp', {
   extend: 'Rally.app.App',
   componentCls: 'app',
-  userStoryID: 0,
+  userStoryID: 59421248389,
+  userStoryName: '',
+  startDate: undefined,
+  endDate: undefined,
   launch: function() {
-    //Write app code here
-    this.burnCalculator = Ext.define('Rally.example.BurnCalculator', {
+    Ext.define('My.BurnCalculator', {
       extend: 'Rally.data.lookback.calculator.TimeSeriesCalculator',
       config: {
         completedScheduleStateNames: ['Accepted']
@@ -62,34 +64,44 @@ Ext.define('CustomApp', {
         models: ['userstory']
       },
       listeners: {
-        ready: this._onUserStoryComboboxLoad,
         select: this._onUserStoryComboboxChanged,
         scope: this
       },
       labelWidth: 75
     });
 
-    this.add({
+    this.startDateChooser = this.add({
       xtype: 'datefield',
       fieldLabel: 'Start Date',
       itemId: 'start_date_chooser',
-      labelWidth: 75
+      labelWidth: 75,
+      listeners: {
+        change: this._onStartDateChanged,
+        scope: this
+      }
     });
 
-    this.add({
+    this.endDateChooser = this.add({
       xtype: 'datefield',
       fieldLabel: 'End Date',
       itemId:'end_date_chooser',
-      labelWidth: 75
+      labelWidth: 75,
+      listeners: {
+        change: this._onEndDateChanged,
+        scope: this
+      }
     });
 
     this.burnChart = this.add({
       xtype: 'rallychart',
       storeType: 'Rally.data.lookback.SnapshotStore',
       storeConfig: this._getStoreConfig(),
-      calculatorType: 'Rally.example.BurnCalculator',
-      calculatorConfig: { completedScheduleStateNames: ['Accepted', 'Released'] },
-      chartConfig: this._getChartConfig()
+      calculatorType: 'My.BurnCalculator',
+      calculatorConfig: {
+        startDate: this.startDate,
+        endData: this.endDate,
+        completedScheduleStateNames: ['Accepted', 'Released'] },
+      chartConfig: this._getChartConfig(),
     });
   },
 
@@ -119,7 +131,7 @@ Ext.define('CustomApp', {
         zoomType: 'xy'
       },
       title: {
-        text: 'PI Burnup'
+        text: 'Burnup of ' + this.userStoryName
       },
       xAxis: {
         categories: [],
@@ -162,15 +174,49 @@ Ext.define('CustomApp', {
     };
   },
 
-  _onUserStoryComboboxLoad: function() {
-    console.log('_onUserStoryComboboxLoad');
+  _onUserStoryComboboxChanged: function(combo,records) {
+    var record = records[0];
+    //console.log('Record: ', record);
+    var newUserStoryID = record.get('ObjectID');
+    if (this.userStoryID != newUserStoryID) {
+      // New user story - reset date ranges
+      this.userStoryID = newUserStoryID;
+      this.startDate = undefined;
+      this.startDateChooser.reset();
+      this.endDate = undefined;
+      this.endDateChooser.reset();
+    }
+    this.userStoryName = record.get('FormattedID') + ': ' + record.get('Name');
+    var newConfig = {
+      storeConfig: this._getStoreConfig(),
+      chartConfig: this._getChartConfig(),
+      calculatorConfig: {
+        startDate: this.startDate,
+        endDate: this.endDate
+      }
+    };
+    this.burnChart.refresh(newConfig);
   },
 
-  _onUserStoryComboboxChanged: function(combo,records) {
-    this.userStoryID = records[0].get('ObjectID');
-    console.log('_onUserStoryComboboxChanged',this.userStoryID);
-    this.burnChart.refresh();
-  }
+  _onStartDateChanged: function(field,newValue) {
+    this.startDate = newValue;
+    var newConfig = {
+      calculatorConfig: {
+        startDate: this.startDate,
+        endDate: this.endDate
+      }
+    };
+    this.burnChart.refresh(newConfig);
+  },
 
-  //API Docs: https://help.rallydev.com/apps/2.1/doc/
+  _onEndDateChanged: function(field,newValue) {
+    this.endDate = newValue;
+    var newConfig = {
+      calculatorConfig: {
+        startDate: this.startDate,
+        endDate: this.endDate
+      }
+    };
+    this.burnChart.refresh(newConfig);
+  }
 });

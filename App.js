@@ -178,7 +178,7 @@ Ext.define('CustomApp', {
     var record = records[0];
     //console.log('Record: ', record);
     var newUserStoryID = record.get('ObjectID');
-    if (this.userStoryID != newUserStoryID) {
+    if (this.userStoryID !== newUserStoryID) {
       // New user story - reset date ranges
       this.userStoryID = newUserStoryID;
       this.startDate = undefined;

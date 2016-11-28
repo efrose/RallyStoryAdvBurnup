@@ -1,10 +1,15 @@
 Ext.define('CustomApp', {
   extend: 'Rally.app.App',
+  stateful: true,
   componentCls: 'app',
   userStoryID: 59421248389,
   userStoryName: '',
   startDate: undefined,
   endDate: undefined,
+  userStoryComboBox: null,
+  startDateChooser: null,
+  endDateChooser: null,
+  burnChart: null,
   launch: function() {
     Ext.define('My.BurnCalculator', {
       extend: 'Rally.data.lookback.calculator.TimeSeriesCalculator',
@@ -59,6 +64,8 @@ Ext.define('CustomApp', {
 
     this.userStoryComboBox = this.add({
       xtype: 'rallyartifactsearchcombobox',
+      stateful: true,
+      stateId: this.getContext().getScopedStateId('userStory'),
       fieldLabel: "User Story",
       storeConfig: {
         models: ['userstory']
@@ -72,6 +79,8 @@ Ext.define('CustomApp', {
 
     this.startDateChooser = this.add({
       xtype: 'datefield',
+      stateful: true,
+      stateId: this.getContext().getScopedStateId('startDate'),
       fieldLabel: 'Start Date',
       itemId: 'start_date_chooser',
       labelWidth: 75,
@@ -83,6 +92,8 @@ Ext.define('CustomApp', {
 
     this.endDateChooser = this.add({
       xtype: 'datefield',
+      stateful: true,
+      stateId: this.getContext().getScopedStateId('endDate'),
       fieldLabel: 'End Date',
       itemId:'end_date_chooser',
       labelWidth: 75,
@@ -187,6 +198,8 @@ Ext.define('CustomApp', {
       this.endDateChooser.reset();
     }
     this.userStoryName = record.get('FormattedID') + ': ' + record.get('Name');
+    this.saveState();
+    if (!this.burnChart) return;
     var newConfig = {
       storeConfig: this._getStoreConfig(),
       chartConfig: this._getChartConfig(),
@@ -200,6 +213,8 @@ Ext.define('CustomApp', {
 
   _onStartDateChanged: function(field,newValue) {
     this.startDate = newValue;
+    this.saveState();
+    if (!this.burnChart) return;
     var newConfig = {
       calculatorConfig: {
         startDate: this.startDate,
@@ -211,6 +226,8 @@ Ext.define('CustomApp', {
 
   _onEndDateChanged: function(field,newValue) {
     this.endDate = newValue;
+    this.saveState();
+    if (!this.burnChart) return;
     var newConfig = {
       calculatorConfig: {
         startDate: this.startDate,
@@ -218,5 +235,14 @@ Ext.define('CustomApp', {
       }
     };
     this.burnChart.refresh(newConfig);
+  },
+
+  getState: function() {
+    return {
+      userStoryID: this.userStoryID,
+      userStoryName: this.userStoryName,
+      startDate: this.startDate,
+      endDate: this.endDate
+    };
   }
 });
